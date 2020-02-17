@@ -40,8 +40,8 @@ class Human():
         # odom_topic = 'robot_' + str(index) + '/odom'
         # self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odometry_callback)
 
-        # crash_topic = 'robot_' + str(index) + '/is_crashed'
-        # self.check_crash = rospy.Subscriber(crash_topic, Int8, self.crash_callback)
+        robot_crash_topic = 'robot_0' + '/is_crashed'
+        self.check_robot_crash = rospy.Subscriber(robot_crash_topic, Int8, self.robot_crash_callback)
 
 
 
@@ -52,8 +52,15 @@ class Human():
 
         self.speed_GT = None
         self.state_GT = None
+        self.is_robot_crashed = False
         while self.speed_GT is None or self.state_GT is None:
             pass
+
+    def robot_crash_callback(self, flag):
+        self.is_robot_crashed = flag.data
+
+    def get_crash_state(self):
+        return self.is_robot_crashed
 
     def control_vel(self, action):
         move_cmd = Twist()
@@ -92,7 +99,8 @@ def run(human):
     action = [0.3,0]
     while not rospy.is_shutdown():
         human.control_vel(action)
-        if human.state_GT[0] < -6:
+        is_crash = human.get_crash_state()
+        if human.state_GT[0] < -6 or is_crash == True:
             pose = [4,0,np.pi]
             human.control_pose(pose)
 

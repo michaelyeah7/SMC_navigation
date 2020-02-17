@@ -208,7 +208,7 @@ class StageWorld():
 
     def generate_goal_point(self):
         #[x_g, y_g] = self.generate_stage_goal()
-        [x_g, y_g] = [0.0, 3.0]
+        [x_g, y_g] = [6.0, 0.0]
         self.goal_point = [x_g, y_g]
         [x, y] = self.get_local_goal()
 
@@ -240,7 +240,7 @@ class StageWorld():
             terminate = True
             reward_g = 15
             result = 'Reach Goal'
-            self.reach_publisher.publish(self.reach_flag)
+            # self.reach_publisher.publish(self.reach_flag)
 
         if is_crash == 1:
             terminate = True
@@ -258,13 +258,14 @@ class StageWorld():
         return reward, terminate, result
 
     def reset_pose(self):
-        random_pose = self.generate_random_pose()
+        # random_pose = self.generate_random_pose()
+        static_pose = [-4.0,0.0,0.0]
         ## reset robot pose to the initial position
         # first_pose = self.first_pose
         rospy.sleep(0.01)
         # self.cmd_pose.publish(first_pose)
         # rospy.sleep(0.01)
-        self.control_pose(random_pose)
+        self.control_pose(static_pose)
         # [x_robot, y_robot, theta] = self.get_self_stateGT()
 
         # # start_time = time.time()

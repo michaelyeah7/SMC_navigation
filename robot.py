@@ -40,7 +40,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
     # rate = rospy.Rate(5)
     buff = []
-    global_update = 1860
+    global_update = 800
     global_step = 0
 
 
@@ -175,10 +175,10 @@ if __name__ == '__main__':
     # cal_file = logdir + '/cal.log'
 
     hostname = socket.gethostname()
-    if not os.path.exists('./log_adv1_naive_network/' + hostname):
-        os.makedirs('./log_adv1_naive_network/' + hostname)
-    output_file = './log_adv1_naive_network/' + hostname + '/output.log'
-    cal_file = './log_adv1_naive_network/' + hostname + '/cal.log'
+    if not os.path.exists('./log_robot/' + hostname):
+        os.makedirs('./log_robot/' + hostname)
+    output_file = './log_robot/' + hostname + '/output.log'
+    cal_file = './log_robot/' + hostname + '/cal.log'
 
     # config log
     logger = logging.getLogger('mylogger')
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     rank = 0
     if rank == 0:
         #policy_path = policydir
-        policy_path = 'policy/ag_notPass'
+        policy_path = 'policy'
         # policy = MLPPolicy(obs_size, act_size)
         policy = CNNPolicy(frames=LASER_HIST, action_space=2)
         policy.cuda()
