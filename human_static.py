@@ -5,7 +5,7 @@ import tf
 import numpy as np
 import os
 import random
-
+import argparse
 
 from geometry_msgs.msg import Twist, Pose
 from nav_msgs.msg import Odometry
@@ -16,6 +16,7 @@ from std_msgs.msg import Int8
 
 class Human():
     def __init__(self,index,init_pose):
+        self.init_pose = init_pose
         node_name = 'human' + str(index)
         rospy.init_node(node_name, anonymous=None)
 
@@ -95,19 +96,23 @@ class Human():
         pose_cmd.orientation.w = qtn[3]
         self.cmd_pose.publish(pose_cmd)
 
-def run(human):
-    action = [0.3,0]
-    while not rospy.is_shutdown():
-        human.control_vel(action)
-        is_crash = human.get_crash_state()
-        if human.state_GT[0] < -6 or is_crash == True:
-            human.reset_pose()
+    def run(self):
+        action = [0.3,0]
+        while not rospy.is_shutdown():
+            self.control_vel(action)
+            is_crash = self.get_crash_state()
+            if self.state_GT[0] < -6 or is_crash == True:
+                self.reset_pose()
 
 
 
 
 if __name__ == '__main__':
-    human1 = Human(1,[4,-1,np.pi])
-    human2 = Human(2,[4,1,np.pi])
-    run(human1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--index', type=int, default=1)
+    parser.add_argument('--y_pos', type=int, default=-1)
+    args = parser.parse_args()
+    init_pose = [4,args.y_pos,np.pi]
+    human = Human(args.index,init_pose)
+    human.run()
     

@@ -40,7 +40,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
     # rate = rospy.Rate(5)
     buff = []
-    global_update = 800
+    global_update = 1080
     global_step = 0
 
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
         if not os.path.exists(policy_path):
             os.makedirs(policy_path)
 
-        file = policy_path + '/Stage1_800_real'
+        file = policy_path + '/Stage1_1080'
         if os.path.exists(file):
             logger.info('####################################')
             logger.info('############Loading Model###########')
