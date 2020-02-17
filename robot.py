@@ -175,10 +175,10 @@ if __name__ == '__main__':
     # cal_file = logdir + '/cal.log'
 
     hostname = socket.gethostname()
-    if not os.path.exists('./log_robot/' + hostname):
-        os.makedirs('./log_robot/' + hostname)
-    output_file = './log_robot/' + hostname + '/output.log'
-    cal_file = './log_robot/' + hostname + '/cal.log'
+    if not os.path.exists('./log_robot2human/' + hostname):
+        os.makedirs('./log_robot2human/' + hostname)
+    output_file = './log_robot2human/' + hostname + '/output.log'
+    cal_file = './log_robot2human/' + hostname + '/cal.log'
 
     # config log
     logger = logging.getLogger('mylogger')
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     rank = 0
     if rank == 0:
         #policy_path = policydir
-        policy_path = 'policy'
+        policy_path = 'policy/robot2human_policy'
         # policy = MLPPolicy(obs_size, act_size)
         policy = CNNPolicy(frames=LASER_HIST, action_space=2)
         policy.cuda()

@@ -15,8 +15,7 @@ from std_srvs.srv import Empty
 from std_msgs.msg import Int8
 
 class Human():
-    def __init__(self):
-        index = 1
+    def __init__(self,index,init_pose):
         node_name = 'human' + str(index)
         rospy.init_node(node_name, anonymous=None)
 
@@ -81,7 +80,8 @@ class Human():
         v = np.sqrt(v_x**2 + v_y**2)
         self.speed_GT = [v, GT_odometry.twist.twist.angular.z]
 
-    def control_pose(self, pose):
+    def reset_pose(self):
+        pose = self.init_pose
         pose_cmd = Pose()
         assert len(pose)==3
         pose_cmd.position.x = pose[0]
@@ -101,13 +101,13 @@ def run(human):
         human.control_vel(action)
         is_crash = human.get_crash_state()
         if human.state_GT[0] < -6 or is_crash == True:
-            pose = [4,0,np.pi]
-            human.control_pose(pose)
+            human.reset_pose()
 
 
 
 
 if __name__ == '__main__':
-    human1 = Human()
+    human1 = Human(1,[4,-1,np.pi])
+    human2 = Human(2,[4,1,np.pi])
     run(human1)
     
