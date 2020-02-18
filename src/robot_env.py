@@ -25,7 +25,8 @@ class StageWorld():
         self.env_index = env_index
         node_name = 'StageEnv_' + str(index)
         print("rank: %d node name:%s"%(mpi_rank,node_name))
-        rospy.init_node(node_name, anonymous=None)
+        # rospy.init_node(node_name, anonymous=None)
+        rospy.init_node()
 
         self.beam_mum = beam_num
         self.laser_cb_num = 0

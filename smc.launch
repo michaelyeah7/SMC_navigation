@@ -1,0 +1,5 @@
+<launch>
+  <!-- human -->
+  <!-- <node name="human-1" pkg="SMC_navigation" type="human_static.py" /> -->
+  <node name="robot" pkg="SMC_navigation" type="robot.py" />
+</launch>
