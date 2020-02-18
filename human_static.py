@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import time
 import rospy
 import copy
@@ -112,7 +113,10 @@ if __name__ == '__main__':
     parser.add_argument('--index', type=int, default=1)
     parser.add_argument('--y_pos', type=int, default=-1)
     args = parser.parse_args()
+
     init_pose = [4,args.y_pos,np.pi]
     human = Human(args.index,init_pose)
     human.run()
+
+
     
