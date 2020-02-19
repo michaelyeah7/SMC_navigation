@@ -7,6 +7,7 @@ import numpy as np
 import os
 import random
 import argparse
+import sys
 
 from geometry_msgs.msg import Twist, Pose
 from nav_msgs.msg import Odometry
@@ -16,10 +17,17 @@ from std_srvs.srv import Empty
 from std_msgs.msg import Int8
 
 class Human():
-    def __init__(self,index,init_pose):
-        self.init_pose = init_pose
-        node_name = 'human' + str(index)
+    def __init__(self):
+        node_name = 'human'
         rospy.init_node(node_name, anonymous=None)
+
+        index = rospy.get_param('~index')
+        y_pos = rospy.get_param('~y_pos')
+
+        self.init_pose = [4,y_pos,np.pi]
+        # node_name = 'robot' + str(index)
+
+        # rospy.init_node()
 
         # -----------Publisher and Subscriber-------------
         # goal_topic = 'robot_0' + '/goal_pose'
@@ -100,23 +108,33 @@ class Human():
     def run(self):
         action = [0.3,0]
         while not rospy.is_shutdown():
-            self.control_vel(action)
-            is_crash = self.get_crash_state()
-            if self.state_GT[0] < -6 or is_crash == True:
-                self.reset_pose()
+            try:
+                self.control_vel(action)
+                is_crash = self.get_crash_state()
+                if self.state_GT[0] < -6 or is_crash == True:
+                    self.reset_pose()
+
+            except KeyboardInterrupt:
+                break
 
 
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--index', type=int, default=1)
-    parser.add_argument('--y_pos', type=int, default=-1)
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--index', type=int, default=1)
+    # parser.add_argument('--y_pos', type=int, default=-1)
+    # args = parser.parse_args()
 
-    init_pose = [4,args.y_pos,np.pi]
-    human = Human(args.index,init_pose)
-    human.run()
+    # init_pose = [4,args.y_pos,np.pi]
+    
+    args = sys.argv
+    print(args)
+    try:
+        human = Human()
+        human.run()
+    except rospy.ROSInterruptException:
+        pass
 
 
     
