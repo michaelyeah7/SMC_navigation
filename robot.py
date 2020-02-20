@@ -8,6 +8,7 @@ import rospy
 import torch
 import torch.nn as nn
 from mpi4py import MPI
+import argparse
 
 from torch.optim import Adam
 from collections import deque
@@ -67,31 +68,17 @@ def run(env, policy, policy_path, action_bound, optimizer):
         state = [obs_stack, goal, speed]
         rospy.sleep(0.1)
         while not terminal and not rospy.is_shutdown():
-            state_list = comm.gather(state, root=0)
-
-            while state_list == None:
-                obs = env.get_laser_observation()
-                obs_stack = deque([obs, obs, obs])
-                goal = np.asarray(env.get_local_goal())
-                speed = np.asarray(env.get_self_speed())
-                state = [obs_stack, goal, speed]
-                            
-                state_list = comm.gather(state, root=0)
-
-            # print('state_list_length',len(state_list))
-            # state_list = [state]
-            # print('env.mpi_rank',env.mpi_rank)
+            # state_list = comm.gather(state, root=0)
+            state_list = [state]
 
             # generate actions at rank==0
             v, a, logprob, scaled_action=generate_action(env=env, state_list=state_list,
                                                          policy=policy, action_bound=action_bound)
 
             # execute actions
-            # print('scaled_action_len',len(scaled_action))
-            # print('scaled action',scaled_action)
-            real_action = comm.scatter(scaled_action, root=0)
+            # real_action = comm.scatter(scaled_action, root=0)
             # print('env.mpi_rank {} real_action{}'.format(env.mpi_rank,real_action))
-            # real_action = scaled_action[0]
+            real_action = scaled_action[0]
             env.control_vel(real_action)
 
             # rate.sleep()
@@ -112,15 +99,15 @@ def run(env, policy, policy_path, action_bound, optimizer):
             state_next = [obs_stack, goal_next, speed_next]
 
             if global_step % HORIZON == 0:
-                state_next_list = comm.gather(state_next, root=0)
-                # state_next_list = [state_next]
+                # state_next_list = comm.gather(state_next, root=0)
+                state_next_list = [state_next]
                 last_v, _, _, _ = generate_action(env=env, state_list=state_next_list, policy=policy,
                                                                action_bound=action_bound)
             # add transitons in buff and update policy
-            r_list = comm.gather(r, root=0)
-            # r_list = [r]
-            terminal_list = comm.gather(terminal, root=0)
-            # terminal_list = [terminal]
+            # r_list = comm.gather(r, root=0)
+            r_list = [r]
+            # terminal_list = comm.gather(terminal, root=0)
+            terminal_list = [terminal]
 
             if env.mpi_rank == 0:
                 buff.append((state_list, a, r_list, terminal_list, logprob, v))
@@ -163,7 +150,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
 if __name__ == '__main__':
     ROS_PORT0 = 11323 #ros port starty from 11321
     NUM_BOT = 1 #num of robot per stage
-    NUM_ENV = 2 #num of total robots
+    NUM_ENV = 1 #num of total robots
     ID = 20 #policy saved directory
     ENV_INDEX =7 # supposed that we only train in the circle
 
@@ -180,11 +167,19 @@ if __name__ == '__main__':
     # output_file =logdir + '/output.log'
     # cal_file = logdir + '/cal.log'
 
-    hostname = socket.gethostname()
-    if not os.path.exists('./log_robot2human/' + hostname):
-        os.makedirs('./log_robot2human/' + hostname)
-    output_file = './log_robot2human/' + hostname + '/output.log'
-    cal_file = './log_robot2human/' + hostname + '/cal.log'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--humans', type=int, default=1)
+    args = parser.parse_args()
+
+    policydir = 'policy/robot%dhuman_policy'%args.humans
+    if not os.path.exists(policydir):
+        os.makedirs(policydir)
+
+    # hostname = socket.gethostname()
+    if not os.path.exists('./log_robot%dhuman/' %args.humans):
+        os.makedirs('./log_robot%dhuman/' %args.humans)
+    output_file = './log_robot%dhuman/' %args.humans + 'output.log'
+    cal_file = './log_robot%dhuman/' %args.humans + 'cal.log'
 
     # config log
     logger = logging.getLogger('mylogger')
@@ -204,9 +199,9 @@ if __name__ == '__main__':
     file_handler.setLevel(logging.INFO)
     logger_cal.addHandler(cal_f_handler)
 
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
+    # comm = MPI.COMM_WORLD
+    # rank = comm.Get_rank()
+    # size = comm.Get_size()
     # rosPort = ROS_PORT0 
     # robotIndex = 0 + (rank%NUM_BOT)
     # envIndex =  int(rank/NUM_BOT)
@@ -214,26 +209,26 @@ if __name__ == '__main__':
     # logger.info('rosport: %d robotIndex: %d rank:%d' %(rosPort,robotIndex,rank))
 
 
-    env = StageWorld(beam_num=360, num_env=NUM_ENV,ros_port = 0,mpi_rank = rank,env_index = ENV_INDEX)
+    env = StageWorld(beam_num=360, num_env=NUM_ENV,ros_port = 0,mpi_rank = 0,env_index = ENV_INDEX)
     reward = None
     action_bound = [[0, -1], [1, 1]]
 
     # torch.manual_seed(1)
     # np.random.seed(1)
-    # print('rank',rank)
+    rank = 0
     if rank == 0:
-        #policy_path = policydir
-        policy_path = 'policy/robot2human_policy'
+        policy_path = policydir
+        # policy_path = 'policy/robot2human_policy'
         # policy = MLPPolicy(obs_size, act_size)
         policy = CNNPolicy(frames=LASER_HIST, action_space=2)
         policy.cuda()
         opt = Adam(policy.parameters(), lr=LEARNING_RATE)
         mse = nn.MSELoss()
 
-        if not os.path.exists(policy_path):
-            os.makedirs(policy_path)
+        # if not os.path.exists(policy_path):
+        #     os.makedirs(policy_path)
 
-        file = policy_path + '/Stage1_1761'
+        file = policy_path + '/Stage1_1760'
         if os.path.exists(file):
             logger.info('####################################')
             logger.info('############Loading Model###########')

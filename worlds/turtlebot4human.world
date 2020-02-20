@@ -105,8 +105,10 @@ define agent position
   )
 
 agent( pose [-4.00 0.00 0.00 0.00])
+agent( pose [4.00 -3.00 0.00 180.00])
 agent( pose [4.00 -1.00 0.00 180.00])
 agent( pose [4.00 1.00 0.00 180.00])
+agent( pose [4.00 3.00 0.00 180.00])
 
 #agent( pose [12.00 0.00 0.00 0.00])
 #agent( pose [20.00 -1.00 0.00 180.00])

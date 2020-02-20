@@ -253,7 +253,7 @@ class StageWorld():
         if np.abs(w) >  1.05:
             reward_w = -0.1 * np.abs(w)
 
-        if t > 150:
+        if t > 200:
             terminate = True
             result = 'Time out'
         reward = reward_g + reward_c + reward_w
