@@ -17,16 +17,17 @@ from std_msgs.msg import Int8
 
 
 class StageWorld():
-    def __init__(self, beam_num, index, num_env,ros_port,mpi_rank,env_index):
+    def __init__(self, beam_num, num_env,ros_port,mpi_rank,env_index):
         #os.environ["ROS_MASTER_URI"]="http://localhost:%d"%ros_port
         self.mpi_rank =mpi_rank
-        self.index = index
+        self.index = mpi_rank
+        index = self.index
         self.num_env = num_env
         self.env_index = env_index
-        node_name = 'StageEnv_' + str(index)
+        node_name = 'StageEnv_' + str(self.index)
         print("rank: %d node name:%s"%(mpi_rank,node_name))
         # rospy.init_node(node_name, anonymous=None)
-        rospy.init_node()
+        rospy.init_node(node_name)
 
         self.beam_mum = beam_num
         self.laser_cb_num = 0
@@ -70,7 +71,7 @@ class StageWorld():
         odom_topic = 'robot_' + str(index) + '/odom'
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odometry_callback)
 
-        crash_topic = 'robot_0' + '/is_crashed'
+        crash_topic = 'robot_' + str(index) + '/is_crashed'
         self.check_crash = rospy.Subscriber(crash_topic, Int8, self.crash_callback)
 
         # reach_topic = 'robot_' + str(index) + '/is_reached'

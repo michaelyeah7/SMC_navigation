@@ -31,7 +31,7 @@ define floorplan model
   boundary 1
 
   gui_nose 0
-  gui_grid 0
+  gui_grid 1
   gui_move 1
   gui_outline 0
   gripper_return 0
@@ -40,13 +40,13 @@ define floorplan model
   obstacle_return 1
 )
 
-floorplan
-(
-  name "blank"
-  size [60.000 60.000 0.800]
-  pose [0.000 0.000 0.000 0.000]
-  bitmap "rink.png"
-)
+#floorplan
+#(
+#  name "blank"
+#  size [60.000 60.000 0.800]
+#  pose [0.000 0.000 0.000 0.000]
+#  bitmap "rink.png"
+#)
 
 
 
@@ -105,7 +105,9 @@ define agent position
   )
 
 agent( pose [-4.00 0.00 0.00 0.00])
-agent( pose [4.00 -1.00 0.00 180.00])
-agent( pose [4.00 1.00 0.00 180.00])
+#agent( pose [4.00 -1.00 0.00 180.00])
+#agent( pose [4.00 1.00 0.00 180.00])
 
-
+agent( pose [12.00 0.00 0.00 0.00])
+#agent( pose [20.00 -1.00 0.00 180.00])
+#agent( pose [20.00 1.00 0.00 180.00])

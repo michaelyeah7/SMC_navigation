@@ -31,7 +31,7 @@ BATCH_SIZE = 1024
 EPOCH = 2
 COEFF_ENTROPY = 5e-4
 CLIP_VALUE = 0.1
-NUM_ENV = 4
+NUM_ENV = 2
 OBS_SIZE = 360
 ACT_SIZE = 2
 LEARNING_RATE = 5e-5
@@ -47,7 +47,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
     if env.index == 0:
         env.reset_world()
-    env.store_resetPose()
+    # env.store_resetPose()
 
 
     for id in range(MAX_EPISODES):
@@ -65,19 +65,33 @@ def run(env, policy, policy_path, action_bound, optimizer):
         goal = np.asarray(env.get_local_goal())
         speed = np.asarray(env.get_self_speed())
         state = [obs_stack, goal, speed]
-
+        rospy.sleep(0.1)
         while not terminal and not rospy.is_shutdown():
-            #state_list = comm.gather(state, root=0)
-            state_list = [state]
+            state_list = comm.gather(state, root=0)
 
+            while state_list == None:
+                obs = env.get_laser_observation()
+                obs_stack = deque([obs, obs, obs])
+                goal = np.asarray(env.get_local_goal())
+                speed = np.asarray(env.get_self_speed())
+                state = [obs_stack, goal, speed]
+                            
+                state_list = comm.gather(state, root=0)
+
+            # print('state_list_length',len(state_list))
+            # state_list = [state]
+            # print('env.mpi_rank',env.mpi_rank)
 
             # generate actions at rank==0
             v, a, logprob, scaled_action=generate_action(env=env, state_list=state_list,
                                                          policy=policy, action_bound=action_bound)
 
             # execute actions
-            #real_action = comm.scatter(scaled_action, root=0)
-            real_action = scaled_action[0]
+            # print('scaled_action_len',len(scaled_action))
+            # print('scaled action',scaled_action)
+            real_action = comm.scatter(scaled_action, root=0)
+            # print('env.mpi_rank {} real_action{}'.format(env.mpi_rank,real_action))
+            # real_action = scaled_action[0]
             env.control_vel(real_action)
 
             # rate.sleep()
@@ -87,15 +101,6 @@ def run(env, policy, policy_path, action_bound, optimizer):
             r, terminal, result = env.get_reward_and_terminate(step)
             ep_reward += r
             global_step += 1
-
-            # if(result == "Reach Goal"):
-            #     print("reaching goal:",env.goal_point)
-            #     # env.reset_world()
-            #     env.generate_goal_point()
-            # if (terminal):
-            #     env.reset_pose()
-            # if(step > EP_LEN):
-            #     next_ep = True
 
 
             # get next state
@@ -107,15 +112,15 @@ def run(env, policy, policy_path, action_bound, optimizer):
             state_next = [obs_stack, goal_next, speed_next]
 
             if global_step % HORIZON == 0:
-                #state_next_list = comm.gather(state_next, root=0)
-                state_next_list = [state_next]
+                state_next_list = comm.gather(state_next, root=0)
+                # state_next_list = [state_next]
                 last_v, _, _, _ = generate_action(env=env, state_list=state_next_list, policy=policy,
                                                                action_bound=action_bound)
             # add transitons in buff and update policy
-            #r_list = comm.gather(r, root=0)
-            r_list = [r]
-            #terminal_list = comm.gather(terminal, root=0)
-            terminal_list = [terminal]
+            r_list = comm.gather(r, root=0)
+            # r_list = [r]
+            terminal_list = comm.gather(terminal, root=0)
+            # terminal_list = [terminal]
 
             if env.mpi_rank == 0:
                 buff.append((state_list, a, r_list, terminal_list, logprob, v))
@@ -158,7 +163,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
 if __name__ == '__main__':
     ROS_PORT0 = 11323 #ros port starty from 11321
     NUM_BOT = 1 #num of robot per stage
-    NUM_ENV = 1 #num of total robots
+    NUM_ENV = 2 #num of total robots
     ID = 20 #policy saved directory
     ENV_INDEX =7 # supposed that we only train in the circle
 
@@ -199,9 +204,9 @@ if __name__ == '__main__':
     file_handler.setLevel(logging.INFO)
     logger_cal.addHandler(cal_f_handler)
 
-    # comm = MPI.COMM_WORLD
-    # rank = comm.Get_rank()
-    # size = comm.Get_size()
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
     # rosPort = ROS_PORT0 
     # robotIndex = 0 + (rank%NUM_BOT)
     # envIndex =  int(rank/NUM_BOT)
@@ -209,13 +214,13 @@ if __name__ == '__main__':
     # logger.info('rosport: %d robotIndex: %d rank:%d' %(rosPort,robotIndex,rank))
 
 
-    env = StageWorld(beam_num=360, index=0, num_env=NUM_ENV,ros_port = 0,mpi_rank = 0,env_index = ENV_INDEX)
+    env = StageWorld(beam_num=360, num_env=NUM_ENV,ros_port = 0,mpi_rank = rank,env_index = ENV_INDEX)
     reward = None
     action_bound = [[0, -1], [1, 1]]
 
     # torch.manual_seed(1)
     # np.random.seed(1)
-    rank = 0
+    # print('rank',rank)
     if rank == 0:
         #policy_path = policydir
         policy_path = 'policy/robot2human_policy'
@@ -228,7 +233,7 @@ if __name__ == '__main__':
         if not os.path.exists(policy_path):
             os.makedirs(policy_path)
 
-        file = policy_path + '/Stage1_1760'
+        file = policy_path + '/Stage1_1761'
         if os.path.exists(file):
             logger.info('####################################')
             logger.info('############Loading Model###########')
@@ -245,6 +250,7 @@ if __name__ == '__main__':
         opt = None
 
     try:
+        print('env.mpi_rank',env.mpi_rank)
         run(env=env, policy=policy, policy_path=policy_path, action_bound=action_bound, optimizer=opt)
     except KeyboardInterrupt:
         pass

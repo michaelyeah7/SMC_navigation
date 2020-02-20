@@ -55,29 +55,29 @@ def transform_buffer(buff):
 
 
 def generate_action(env, state_list, policy, action_bound):
-    # if env.mpi_rank == 1:
-    s_list, goal_list, speed_list = [], [], []
-    for i in state_list:
-        s_list.append(i[0])
-        goal_list.append(i[1])
-        speed_list.append(i[2])
+    if env.mpi_rank == 0:
+        s_list, goal_list, speed_list = [], [], []
+        for i in state_list:
+            s_list.append(i[0])
+            goal_list.append(i[1])
+            speed_list.append(i[2])
 
-    s_list = np.asarray(s_list)
-    goal_list = np.asarray(goal_list)
-    speed_list = np.asarray(speed_list)
+        s_list = np.asarray(s_list)
+        goal_list = np.asarray(goal_list)
+        speed_list = np.asarray(speed_list)
 
-    s_list = Variable(torch.from_numpy(s_list)).float().cuda()
-    goal_list = Variable(torch.from_numpy(goal_list)).float().cuda()
-    speed_list = Variable(torch.from_numpy(speed_list)).float().cuda()
+        s_list = Variable(torch.from_numpy(s_list)).float().cuda()
+        goal_list = Variable(torch.from_numpy(goal_list)).float().cuda()
+        speed_list = Variable(torch.from_numpy(speed_list)).float().cuda()
 
-    v, a, logprob, mean = policy(s_list, goal_list, speed_list)
-    v, a, logprob = v.data.cpu().numpy(), a.data.cpu().numpy(), logprob.data.cpu().numpy()
-    scaled_action = np.clip(a, a_min=action_bound[0], a_max=action_bound[1])
-    # else:
-    #     v = None
-    #     a = None
-    #     scaled_action = None
-    #     logprob = None
+        v, a, logprob, mean = policy(s_list, goal_list, speed_list)
+        v, a, logprob = v.data.cpu().numpy(), a.data.cpu().numpy(), logprob.data.cpu().numpy()
+        scaled_action = np.clip(a, a_min=action_bound[0], a_max=action_bound[1])
+    else:
+        v = None
+        a = None
+        scaled_action = None
+        logprob = None
 
     return v, a, logprob, scaled_action
 
