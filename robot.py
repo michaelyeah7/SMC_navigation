@@ -39,6 +39,7 @@ LEARNING_RATE = 5e-5
 
 def run(env, policy, policy_path, action_bound, optimizer):
 
+    
     # rate = rospy.Rate(5)
     buff = []
     global_update = 1760
@@ -51,6 +52,8 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
 
     for id in range(MAX_EPISODES):
+        print('\x1b[6;30;42m' +'env.mpi_rank {}'.format(env.mpi_rank)+ '\x1b[0m')
+        rospy.sleep(3.0)
         env.reset_pose()
         # env.reset_world()
 
@@ -66,10 +69,11 @@ def run(env, policy, policy_path, action_bound, optimizer):
         speed = np.asarray(env.get_self_speed())
         state = [obs_stack, goal, speed]
         rospy.sleep(0.1)
+        # print('\x1b[6;30;42m' +'env.mpi_rank {}'.format(env.mpi_rank)+ 'before while'+'\x1b[0m')
         while not terminal and not rospy.is_shutdown():
             state_list = comm.gather(state, root=0)
 
-            while state_list == None:
+            while state_list == None and env.mpi_rank == 0:
                 obs = env.get_laser_observation()
                 obs_stack = deque([obs, obs, obs])
                 goal = np.asarray(env.get_local_goal())
@@ -83,6 +87,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
             # print('env.mpi_rank',env.mpi_rank)
 
             # generate actions at rank==0
+            # print('\x1b[6;30;42m' +'env.mpi_rank {}'.format(env.mpi_rank)+ 'in while'+'\x1b[0m')
             v, a, logprob, scaled_action=generate_action(env=env, state_list=state_list,
                                                          policy=policy, action_bound=action_bound)
 
@@ -90,7 +95,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
             # print('scaled_action_len',len(scaled_action))
             # print('scaled action',scaled_action)
             real_action = comm.scatter(scaled_action, root=0)
-            # print('env.mpi_rank {} real_action{}'.format(env.mpi_rank,real_action))
+            # print('\x1b[6;30;42m' +'env.mpi_rank {} real_action{}'.format(env.mpi_rank,real_action)+ '\x1b[0m')
             # real_action = scaled_action[0]
             env.control_vel(real_action)
 
