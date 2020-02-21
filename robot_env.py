@@ -21,7 +21,7 @@ class StageWorld():
         #os.environ["ROS_MASTER_URI"]="http://localhost:%d"%ros_port
         self.mpi_rank =mpi_rank
         self.index = mpi_rank
-        index = self.index
+        index = self.index * 3
         self.num_env = num_env
         self.env_index = env_index
         node_name = 'StageEnv_' + str(self.index)
