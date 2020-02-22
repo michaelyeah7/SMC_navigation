@@ -1,13 +1,13 @@
 agents_file = open("agents.txt","a")
 
 #number of same scenario
-groups_num = 80
-column_num = 20
-row_num = 4
+groups_num = 2
+column_num = 2
+row_num = 1
 #Needed for group location calculations
 group_index = 0 
-x_step = 10
-y_step = 10
+x_step = 20
+y_step = 20
 
 #robot initial positions
 robot_x_init = -100

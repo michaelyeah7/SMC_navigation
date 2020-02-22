@@ -46,8 +46,8 @@ def run(env, policy, policy_path, action_bound, optimizer):
     global_step = 0
 
 
-    if env.index == 0:
-        env.reset_world()
+    # if env.mpi_rank == 0:
+    #     env.reset_world()
     # env.store_resetPose()
 
 
@@ -107,8 +107,8 @@ def run(env, policy, policy_path, action_bound, optimizer):
             state_next = [obs_stack, goal_next, speed_next]
 
             if global_step % HORIZON == 0:
-                # state_next_list = comm.gather(state_next, root=0)
-                state_next_list = [state_next]
+                state_next_list = comm.gather(state_next, root=0)
+                # state_next_list = [state_next]
                 last_v, _, _, _ = generate_action(env=env, state_list=state_next_list, policy=policy,
                                                                action_bound=action_bound)
             # add transitons in buff and update policy
@@ -165,11 +165,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--humans', type=int, default=2)
-    parser.add_argument('--groups_num', type=int, default=80)
-    parser.add_argument('--column_num', type=int, default=20)
-    parser.add_argument('--row_num', type=int, default=4)
-    parser.add_argument('--x_step', type=int, default=10)
-    parser.add_argument('--y_step', type=int, default=10)
+    parser.add_argument('--groups_num', type=int, default=2)
+    parser.add_argument('--column_num', type=int, default=2)
+    parser.add_argument('--row_num', type=int, default=1)
+    parser.add_argument('--x_step', type=int, default=20)
+    parser.add_argument('--y_step', type=int, default=20)
     parser.add_argument('--robot_x_init', type=int, default=-100)
     parser.add_argument('--robot_y_init', type=int, default=80)
     args = parser.parse_args()

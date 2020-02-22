@@ -22,9 +22,9 @@ class Human():
         rospy.init_node(node_name, anonymous=None)
 
         index = rospy.get_param('~index')
-        y_pos = rospy.get_param('~y_pos')
+        # y_pos = rospy.get_param('~y_pos')
 
-        self.init_pose = [4,y_pos,np.pi]
+        # self.init_pose = [4,y_pos,np.pi]
         # node_name = 'robot' + str(index)
 
         # rospy.init_node()
@@ -46,13 +46,24 @@ class Human():
 
         # self.laser_sub = rospy.Subscriber(laser_topic, LaserScan, self.laser_scan_callback)
 
-        # odom_topic = 'robot_' + str(index) + '/odom'
+        odom_topic = 'robot_' + str(index) + '/odom'
         # self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odometry_callback)
 
         robot_crash_topic = 'robot_0' + '/is_crashed'
         self.check_robot_crash = rospy.Subscriber(robot_crash_topic, Int8, self.robot_crash_callback)
 
 
+
+        # get initial pose for resetting
+        self.odom_topic = odom_topic
+        self.first_pose = None
+        while self.first_pose is None:
+            try:
+                self.first_pose = rospy.wait_for_message(odom_topic, Odometry, timeout=5).pose.pose
+            except:
+                pass
+        #for compute distance
+        self.init_pose = [self.first_pose.position.x, self.first_pose.position.y, np.pi]
 
         # self.sim_clock = rospy.Subscriber('clock', Clock, self.sim_clock_callback)
 
@@ -106,12 +117,12 @@ class Human():
         self.cmd_pose.publish(pose_cmd)
 
     def run(self):
-        action = [0.3,0]
+        action = [-0.3,0]
         while not rospy.is_shutdown():
             try:
                 self.control_vel(action)
                 is_crash = self.get_crash_state()
-                if self.state_GT[0] < -6 or is_crash == True:
+                if self.state_GT[0] < (self.init_pose[0]-10) or is_crash == True:
                     self.reset_pose()
 
             except KeyboardInterrupt:

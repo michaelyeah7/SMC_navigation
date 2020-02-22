@@ -214,16 +214,16 @@ class StageWorld():
     def generate_goal_point(self):
         #[x_g, y_g] = self.generate_stage_goal()
         # [x_g, y_g] = [6.0, 0.0]
-        self.goal_point = [x_g, y_g]
+        # self.goal_point = [x_g, y_g]
         [x, y] = self.get_local_goal()
 
         self.pre_distance = np.sqrt(x ** 2 + y ** 2)
         self.distance = copy.deepcopy(self.pre_distance)
 
         #------broadcast the goal with the adversarial robot------#
-        goal = Pose()
-        goal.position.x = x_g
-        goal.position.y = y_g
+        # goal = Pose()
+        # goal.position.x = x_g
+        # goal.position.y = y_g
         # self.goal_pub.publish(goal)
 
 
