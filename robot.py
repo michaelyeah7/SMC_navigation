@@ -68,17 +68,25 @@ def run(env, policy, policy_path, action_bound, optimizer):
         state = [obs_stack, goal, speed]
         rospy.sleep(0.1)
         while not terminal and not rospy.is_shutdown():
-            # state_list = comm.gather(state, root=0)
-            state_list = [state]
+            state_list = comm.gather(state, root=0)
+            # state_list = [state]
+            while state_list == None and env.mpi_rank == 0:
+                obs = env.get_laser_observation()
+                obs_stack = deque([obs, obs, obs])
+                goal = np.asarray(env.get_local_goal())
+                speed = np.asarray(env.get_self_speed())
+                state = [obs_stack, goal, speed]
+                            
+                state_list = comm.gather(state, root=0)
 
             # generate actions at rank==0
             v, a, logprob, scaled_action=generate_action(env=env, state_list=state_list,
                                                          policy=policy, action_bound=action_bound)
 
             # execute actions
-            # real_action = comm.scatter(scaled_action, root=0)
+            real_action = comm.scatter(scaled_action, root=0)
             # print('env.mpi_rank {} real_action{}'.format(env.mpi_rank,real_action))
-            real_action = scaled_action[0]
+            # real_action = scaled_action[0]
             env.control_vel(real_action)
 
             # rate.sleep()
@@ -104,10 +112,10 @@ def run(env, policy, policy_path, action_bound, optimizer):
                 last_v, _, _, _ = generate_action(env=env, state_list=state_next_list, policy=policy,
                                                                action_bound=action_bound)
             # add transitons in buff and update policy
-            # r_list = comm.gather(r, root=0)
-            r_list = [r]
-            # terminal_list = comm.gather(terminal, root=0)
-            terminal_list = [terminal]
+            r_list = comm.gather(r, root=0)
+            # r_list = [r]
+            terminal_list = comm.gather(terminal, root=0)
+            # terminal_list = [terminal]
 
             if env.mpi_rank == 0:
                 buff.append((state_list, a, r_list, terminal_list, logprob, v))
@@ -148,29 +156,46 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
 
 if __name__ == '__main__':
-    ROS_PORT0 = 11323 #ros port starty from 11321
-    NUM_BOT = 1 #num of robot per stage
-    NUM_ENV = 1 #num of total robots
-    ID = 20 #policy saved directory
-    ENV_INDEX =7 # supposed that we only train in the circle
+    # ROS_PORT0 = 11323 #ros port starty from 11321
+    # NUM_BOT = 1 #num of robot per stage
+    # NUM_ENV = 2 #num of total robots
+    # ID = 20 #policy saved directory
+    # ENV_INDEX =7 # supposed that we only train in the circle
 
-    # config log
-    # hostname = socket.gethostname()
-    # hostname = "autoRL_%d"%ID
-    # dirname = '/clever/saved_model_ppo/' + hostname
-    # logdir = dirname + "/log"
-    # policydir = dirname
-    # if not os.path.exists(dirname):
-    #     os.makedirs(dirname)
-    # if not os.path.exists(logdir):
-    #     os.makedirs(logdir)
-    # output_file =logdir + '/output.log'
-    # cal_file = logdir + '/cal.log'
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--humans', type=int, default=1)
+    parser.add_argument('--humans', type=int, default=2)
+    parser.add_argument('--groups_num', type=int, default=80)
+    parser.add_argument('--column_num', type=int, default=20)
+    parser.add_argument('--row_num', type=int, default=4)
+    parser.add_argument('--x_step', type=int, default=10)
+    parser.add_argument('--y_step', type=int, default=10)
+    parser.add_argument('--robot_x_init', type=int, default=-100)
+    parser.add_argument('--robot_y_init', type=int, default=80)
     args = parser.parse_args()
 
+    NUM_ENV = args.groups_num
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+
+    group_index = rank
+    column_index = group_index % args.column_num
+    row_index = group_index / args.column_num
+
+    robot_index = rank * 3
+    init_pose_x = args.x_step * column_index + args.robot_x_init
+    init_pose_y = args.y_step * row_index + args.robot_y_init
+    init_pose = [init_pose_x, init_pose_y, 0.0]
+    goal_point = [init_pose_x + 10, init_pose_y]
+
+    env = StageWorld(beam_num=360,mpi_rank = rank, robot_index=robot_index, init_pose=init_pose, goal_point=goal_point)
+    reward = None
+    action_bound = [[0, -1], [1, 1]]
+
+
+    #set policy folder and log folder
     policydir = 'policy/robot%dhuman_policy'%args.humans
     if not os.path.exists(policydir):
         os.makedirs(policydir)
@@ -199,23 +224,14 @@ if __name__ == '__main__':
     file_handler.setLevel(logging.INFO)
     logger_cal.addHandler(cal_f_handler)
 
-    # comm = MPI.COMM_WORLD
-    # rank = comm.Get_rank()
-    # size = comm.Get_size()
-    # rosPort = ROS_PORT0 
-    # robotIndex = 0 + (rank%NUM_BOT)
-    # envIndex =  int(rank/NUM_BOT)
-    # rosPort = rosPort + int(rank/NUM_BOT)
-    # logger.info('rosport: %d robotIndex: %d rank:%d' %(rosPort,robotIndex,rank))
 
 
-    env = StageWorld(beam_num=360, num_env=NUM_ENV,ros_port = 0,mpi_rank = 0,env_index = ENV_INDEX)
-    reward = None
-    action_bound = [[0, -1], [1, 1]]
+
+
 
     # torch.manual_seed(1)
     # np.random.seed(1)
-    rank = 0
+
     if rank == 0:
         policy_path = policydir
         # policy_path = 'policy/robot2human_policy'

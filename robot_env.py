@@ -17,14 +17,16 @@ from std_msgs.msg import Int8
 
 
 class StageWorld():
-    def __init__(self, beam_num, num_env,ros_port,mpi_rank,env_index):
+    def __init__(self, beam_num, mpi_rank, robot_index, init_pose, goal_point):
         #os.environ["ROS_MASTER_URI"]="http://localhost:%d"%ros_port
         self.mpi_rank =mpi_rank
-        self.index = mpi_rank
-        index = self.index
-        self.num_env = num_env
-        self.env_index = env_index
-        node_name = 'StageEnv_' + str(self.index)
+        index = robot_index
+        #[x,y,orientation]
+        self.init_pose = init_pose
+        #[goal_x, goal_y]
+        self.goal_point = goal_point
+
+        node_name = 'StageEnv_' + str(index)
         print("rank: %d node name:%s"%(mpi_rank,node_name))
         # rospy.init_node(node_name, anonymous=None)
         rospy.init_node(node_name)
@@ -84,15 +86,15 @@ class StageWorld():
         self.reset_stage = rospy.ServiceProxy('reset_positions', Empty)
 
         # # get initial pose for resetting
-        self.odom_topic = odom_topic
-        self.first_pose = None
-        while self.first_pose is None:
-            try:
-                self.first_pose = rospy.wait_for_message(odom_topic, Odometry, timeout=5).pose.pose
-            except:
-                pass
-        #for compute distance
-        self.init_pose = [self.first_pose.position.x, self.first_pose.position.y]
+        # self.odom_topic = odom_topic
+        # self.first_pose = None
+        # while self.first_pose is None:
+        #     try:
+        #         self.first_pose = rospy.wait_for_message(odom_topic, Odometry, timeout=5).pose.pose
+        #     except:
+        #         pass
+        # #for compute distance
+        # self.init_pose = [self.first_pose.position.x, self.first_pose.position.y]
 
         # # Wait until the first callback
         self.speed = None
@@ -211,7 +213,7 @@ class StageWorld():
 
     def generate_goal_point(self):
         #[x_g, y_g] = self.generate_stage_goal()
-        [x_g, y_g] = [6.0, 0.0]
+        # [x_g, y_g] = [6.0, 0.0]
         self.goal_point = [x_g, y_g]
         [x, y] = self.get_local_goal()
 
@@ -262,13 +264,13 @@ class StageWorld():
 
     def reset_pose(self):
         # random_pose = self.generate_random_pose()
-        static_pose = [-4.0,0.0,0.0]
+        # static_pose = [-4.0,0.0,0.0]
         ## reset robot pose to the initial position
         # first_pose = self.first_pose
         rospy.sleep(0.01)
         # self.cmd_pose.publish(first_pose)
         # rospy.sleep(0.01)
-        self.control_pose(static_pose)
+        self.control_pose(self.init_pose)
         # [x_robot, y_robot, theta] = self.get_self_stateGT()
 
         # # start_time = time.time()
@@ -358,40 +360,40 @@ class StageWorld():
 
         return [x, y]
 
-    def generate_stage_goal(self):
-        env0_goals = [(2,0),(2,8),(-4,0),(-4,3),(-4,-2),(-5,-6),(7,-4),(7,-6)]
-        env1_goals = []
-        env2_goals = [(5.5,3),(8,2),(0,3),(0,6),(-3,0),(-7,0),(1,-4),(1,-6)]
-        env3_goals = [(-2,2),(-2,6),(3,2),(3,6),(-2,-2),(-2,-6),(3,-3),(7,-7)]
-        env4_goals = [(3,1),(7,1),(1,1),(5,1),(5,-1.5),(7,-1.5),(4,-4),(7.5,6.5)]
-        env5_goals = [(0,1),(0,2),(4,-1),(8,-6.5),(0,-7.5),(4,-1),(8,-6.5),(0,-7.5)]
-        goal_index = random.randrange(0, 8)     
-        if(self.env_index == 0):
-            x = env0_goals[goal_index][0]
-            y = env0_goals[goal_index][1]
-            return [x,y]
-        elif (self.env_index ==1):
-            return self.generate_random_goal()
-        elif (self.env_index ==2 ):
-            x = env2_goals[goal_index][0]
-            y = env2_goals[goal_index][1]
-            return [x,y]        
-        elif (self.env_index ==3 ):
-            x = env3_goals[goal_index][0]
-            y = env3_goals[goal_index][1]
-            return [x,y]
-        elif (self.env_index ==4 ):
-            x = env4_goals[goal_index][0]
-            y = env4_goals[goal_index][1]
-            return [x,y]
-        elif (self.env_index ==5 ):
-            x = env5_goals[goal_index][0]
-            y = env5_goals[goal_index][1]
-            return [x,y]
-        elif (self.env_index == 6):
-            return self.generate_random_goal_v2()
-        elif (self.env_index == 7):
-            return self.generate_random_goal_v3()
-        elif(self.env_index ==10):
-            return [0.0,4.0]
+    # def generate_stage_goal(self):
+    #     env0_goals = [(2,0),(2,8),(-4,0),(-4,3),(-4,-2),(-5,-6),(7,-4),(7,-6)]
+    #     env1_goals = []
+    #     env2_goals = [(5.5,3),(8,2),(0,3),(0,6),(-3,0),(-7,0),(1,-4),(1,-6)]
+    #     env3_goals = [(-2,2),(-2,6),(3,2),(3,6),(-2,-2),(-2,-6),(3,-3),(7,-7)]
+    #     env4_goals = [(3,1),(7,1),(1,1),(5,1),(5,-1.5),(7,-1.5),(4,-4),(7.5,6.5)]
+    #     env5_goals = [(0,1),(0,2),(4,-1),(8,-6.5),(0,-7.5),(4,-1),(8,-6.5),(0,-7.5)]
+    #     goal_index = random.randrange(0, 8)     
+    #     if(self.env_index == 0):
+    #         x = env0_goals[goal_index][0]
+    #         y = env0_goals[goal_index][1]
+    #         return [x,y]
+    #     elif (self.env_index ==1):
+    #         return self.generate_random_goal()
+    #     elif (self.env_index ==2 ):
+    #         x = env2_goals[goal_index][0]
+    #         y = env2_goals[goal_index][1]
+    #         return [x,y]        
+    #     elif (self.env_index ==3 ):
+    #         x = env3_goals[goal_index][0]
+    #         y = env3_goals[goal_index][1]
+    #         return [x,y]
+    #     elif (self.env_index ==4 ):
+    #         x = env4_goals[goal_index][0]
+    #         y = env4_goals[goal_index][1]
+    #         return [x,y]
+    #     elif (self.env_index ==5 ):
+    #         x = env5_goals[goal_index][0]
+    #         y = env5_goals[goal_index][1]
+    #         return [x,y]
+    #     elif (self.env_index == 6):
+    #         return self.generate_random_goal_v2()
+    #     elif (self.env_index == 7):
+    #         return self.generate_random_goal_v3()
+    #     elif(self.env_index ==10):
+    #         return [0.0,4.0]
 
