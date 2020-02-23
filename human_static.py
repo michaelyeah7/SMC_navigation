@@ -117,7 +117,7 @@ class Human():
         self.cmd_pose.publish(pose_cmd)
 
     def run(self):
-        action = [-0.3,0]
+        action = [0.3,0]
         while not rospy.is_shutdown():
             try:
                 self.control_vel(action)

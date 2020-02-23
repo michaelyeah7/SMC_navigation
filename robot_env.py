@@ -17,14 +17,14 @@ from std_msgs.msg import Int8
 
 
 class StageWorld():
-    def __init__(self, beam_num, mpi_rank, robot_index, init_pose, goal_point):
+    def __init__(self, beam_num, mpi_rank, robot_index):
         #os.environ["ROS_MASTER_URI"]="http://localhost:%d"%ros_port
         self.mpi_rank =mpi_rank
         index = robot_index
         #[x,y,orientation]
-        self.init_pose = init_pose
-        #[goal_x, goal_y]
-        self.goal_point = goal_point
+        # self.init_pose = init_pose
+        # #[goal_x, goal_y]
+        # self.goal_point = goal_point
 
         node_name = 'StageEnv_' + str(index)
         print("rank: %d node name:%s"%(mpi_rank,node_name))
@@ -85,16 +85,17 @@ class StageWorld():
         # -----------Service-------------------
         self.reset_stage = rospy.ServiceProxy('reset_positions', Empty)
 
-        # # get initial pose for resetting
-        # self.odom_topic = odom_topic
-        # self.first_pose = None
-        # while self.first_pose is None:
-        #     try:
-        #         self.first_pose = rospy.wait_for_message(odom_topic, Odometry, timeout=5).pose.pose
-        #     except:
-        #         pass
-        # #for compute distance
-        # self.init_pose = [self.first_pose.position.x, self.first_pose.position.y]
+        # get initial pose for resetting
+        self.odom_topic = odom_topic
+        self.first_pose = None
+        while self.first_pose is None:
+            try:
+                self.first_pose = rospy.wait_for_message(odom_topic, Odometry, timeout=5).pose.pose
+            except:
+                pass
+        #for compute distance
+        self.init_pose = [self.first_pose.position.x, self.first_pose.position.y, 0.0]
+        self.goal_point = [self.init_pose[0]+10, self.init_pose[0]]
 
         # # Wait until the first callback
         self.speed = None

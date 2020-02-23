@@ -4,9 +4,35 @@
     <arg name="group_index" value="0"/>
   </include>
 
-
   <include file="$(find SMC_navigation)/smc.launch">
     <arg name="group_index" value="1"/>
   </include>
 
+  <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="2"/>
+  </include>
+
+  <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="3"/>
+  </include>
+
+  <!-- <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="4"/>
+  </include>
+
+  <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="5"/>
+  </include>
+
+  <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="6"/>
+  </include>
+
+  <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="7"/>
+  </include>
+
+  <include file="$(find SMC_navigation)/smc.launch">
+    <arg name="group_index" value="8"/>
+  </include> -->
 </launch>

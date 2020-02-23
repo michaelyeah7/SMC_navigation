@@ -165,9 +165,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--humans', type=int, default=2)
-    parser.add_argument('--groups_num', type=int, default=2)
+    parser.add_argument('--groups_num', type=int, default=4)
     parser.add_argument('--column_num', type=int, default=2)
-    parser.add_argument('--row_num', type=int, default=1)
+    parser.add_argument('--row_num', type=int, default=2)
     parser.add_argument('--x_step', type=int, default=20)
     parser.add_argument('--y_step', type=int, default=20)
     parser.add_argument('--robot_x_init', type=int, default=-100)
@@ -185,12 +185,12 @@ if __name__ == '__main__':
     row_index = group_index / args.column_num
 
     robot_index = rank * 3
-    init_pose_x = args.x_step * column_index + args.robot_x_init
-    init_pose_y = args.y_step * row_index + args.robot_y_init
-    init_pose = [init_pose_x, init_pose_y, 0.0]
-    goal_point = [init_pose_x + 10, init_pose_y]
+    # init_pose_x = args.x_step * column_index + args.robot_x_init
+    # init_pose_y = args.y_step * row_index + args.robot_y_init
+    # init_pose = [init_pose_x, init_pose_y, 0.0]
+    # goal_point = [init_pose_x + 10, init_pose_y]
 
-    env = StageWorld(beam_num=360,mpi_rank = rank, robot_index=robot_index, init_pose=init_pose, goal_point=goal_point)
+    env = StageWorld(beam_num=360,mpi_rank = rank, robot_index=robot_index)
     reward = None
     action_bound = [[0, -1], [1, 1]]
 
