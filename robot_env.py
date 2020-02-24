@@ -95,7 +95,7 @@ class StageWorld():
                 pass
         #for compute distance
         self.init_pose = [self.first_pose.position.x, self.first_pose.position.y, 0.0]
-        self.goal_point = [self.init_pose[0]+10, self.init_pose[0]]
+        # self.goal_point = [self.init_pose[0]+10, self.init_pose[0]]
 
         # # Wait until the first callback
         self.speed = None
@@ -213,9 +213,9 @@ class StageWorld():
 
 
     def generate_goal_point(self):
-        #[x_g, y_g] = self.generate_stage_goal()
+        [x_g, y_g] = self.generate_front_goal()
         # [x_g, y_g] = [6.0, 0.0]
-        # self.goal_point = [x_g, y_g]
+        self.goal_point = [x_g, y_g]
         [x, y] = self.get_local_goal()
 
         self.pre_distance = np.sqrt(x ** 2 + y ** 2)
@@ -317,6 +317,11 @@ class StageWorld():
         theta = np.random.uniform(0, 2 * np.pi)
         return [0,-2, np.pi/2]
         #return [x, y, theta]
+
+    def generate_front_goal(self):
+        y_displacement = np.random.uniform(-5,5)
+        y_displacement = np.random.uniform(-5,5)
+        return [self.init_pose[0]+10,self.init_pose[1]+y_displacement]
 
     def generate_random_goal(self):
         self.init_pose = self.get_self_stateGT()
