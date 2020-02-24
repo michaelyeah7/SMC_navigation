@@ -123,6 +123,7 @@ class Human():
                 self.control_vel(action)
                 is_crash = self.get_crash_state()
                 if self.state_GT[0] < (self.init_pose[0]-10) or is_crash == True:
+                    rospy.sleep(3.0)
                     self.reset_pose()
 
             except KeyboardInterrupt:

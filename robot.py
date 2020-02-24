@@ -52,6 +52,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
 
     for id in range(MAX_EPISODES):
+        rospy.sleep(3.0)
         env.reset_pose()
         # env.reset_world()
 
