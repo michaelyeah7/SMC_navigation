@@ -17,10 +17,11 @@ from std_msgs.msg import Int8
 
 
 class StageWorld():
-    def __init__(self, beam_num, mpi_rank, robot_index):
+    def __init__(self, beam_num, mpi_rank, robot_index, mode):
         #os.environ["ROS_MASTER_URI"]="http://localhost:%d"%ros_port
         self.mpi_rank =mpi_rank
         index = robot_index
+        self.mode = mode
         #[x,y,orientation]
         # self.init_pose = init_pose
         # #[goal_x, goal_y]
@@ -256,7 +257,7 @@ class StageWorld():
         if np.abs(w) >  1.05:
             reward_w = -0.1 * np.abs(w)
 
-        if t > 200:
+        if t > 250:
             terminate = True
             result = 'Time out'
         reward = reward_g + reward_c + reward_w
@@ -319,9 +320,12 @@ class StageWorld():
         #return [x, y, theta]
 
     def generate_front_goal(self):
-        y_displacement = np.random.uniform(-5,5)
-        y_displacement = np.random.uniform(-5,5)
-        return [self.init_pose[0]+10,self.init_pose[1]+y_displacement]
+        if self.mode == 'train':
+            y_displacement = np.random.uniform(-5,5)
+            y_displacement = np.random.uniform(-5,5)
+            return [self.init_pose[0]+10,self.init_pose[1]+y_displacement]
+        else:
+            return [5.5,7]
 
     def generate_random_goal(self):
         self.init_pose = self.get_self_stateGT()
@@ -337,69 +341,3 @@ class StageWorld():
 
         return [0,-2, np.pi/2]
         #return [x, y]
-
-    def generate_random_goal_v2(self):
-        self.init_pose = self.get_self_stateGT()
-        x = np.random.uniform(-4.5, 4.5)
-        y = np.random.uniform(-4.5, 4.5)
-        dis_origin = np.sqrt(x ** 2 + y ** 2)
-        dis_goal = np.sqrt((x - self.init_pose[0]) ** 2 + (y - self.init_pose[1]) ** 2)
-        while (dis_origin > 4.5 or dis_goal > 5 or dis_goal < 4) and not rospy.is_shutdown():
-            x = np.random.uniform(-4.5, 4.5)
-            y = np.random.uniform(-4.5, 4.5)
-            dis_origin = np.sqrt(x ** 2 + y ** 2)
-            dis_goal = np.sqrt((x - self.init_pose[0]) ** 2 + (y - self.init_pose[1]) ** 2)
-
-        return [x, y]
-
-    def generate_random_goal_v3(self):
-        self.init_pose = self.get_self_stateGT()
-        x = np.random.uniform(-4.5, 4.5)
-        y = np.random.uniform(0, 4.5)
-        dis_origin = np.sqrt(x ** 2 + y ** 2)
-        dis_goal = np.sqrt((x - self.init_pose[0]) ** 2 + (y - self.init_pose[1]) ** 2)
-        while (dis_origin > 4.5 or dis_goal > 5 or dis_goal < 4) and not rospy.is_shutdown():
-            x = np.random.uniform(-4.5, 4.5)
-            y = np.random.uniform(0, 4.5)
-            dis_origin = np.sqrt(x ** 2 + y ** 2)
-            dis_goal = np.sqrt((x - self.init_pose[0]) ** 2 + (y - self.init_pose[1]) ** 2)
-
-        return [x, y]
-
-    # def generate_stage_goal(self):
-    #     env0_goals = [(2,0),(2,8),(-4,0),(-4,3),(-4,-2),(-5,-6),(7,-4),(7,-6)]
-    #     env1_goals = []
-    #     env2_goals = [(5.5,3),(8,2),(0,3),(0,6),(-3,0),(-7,0),(1,-4),(1,-6)]
-    #     env3_goals = [(-2,2),(-2,6),(3,2),(3,6),(-2,-2),(-2,-6),(3,-3),(7,-7)]
-    #     env4_goals = [(3,1),(7,1),(1,1),(5,1),(5,-1.5),(7,-1.5),(4,-4),(7.5,6.5)]
-    #     env5_goals = [(0,1),(0,2),(4,-1),(8,-6.5),(0,-7.5),(4,-1),(8,-6.5),(0,-7.5)]
-    #     goal_index = random.randrange(0, 8)     
-    #     if(self.env_index == 0):
-    #         x = env0_goals[goal_index][0]
-    #         y = env0_goals[goal_index][1]
-    #         return [x,y]
-    #     elif (self.env_index ==1):
-    #         return self.generate_random_goal()
-    #     elif (self.env_index ==2 ):
-    #         x = env2_goals[goal_index][0]
-    #         y = env2_goals[goal_index][1]
-    #         return [x,y]        
-    #     elif (self.env_index ==3 ):
-    #         x = env3_goals[goal_index][0]
-    #         y = env3_goals[goal_index][1]
-    #         return [x,y]
-    #     elif (self.env_index ==4 ):
-    #         x = env4_goals[goal_index][0]
-    #         y = env4_goals[goal_index][1]
-    #         return [x,y]
-    #     elif (self.env_index ==5 ):
-    #         x = env5_goals[goal_index][0]
-    #         y = env5_goals[goal_index][1]
-    #         return [x,y]
-    #     elif (self.env_index == 6):
-    #         return self.generate_random_goal_v2()
-    #     elif (self.env_index == 7):
-    #         return self.generate_random_goal_v3()
-    #     elif(self.env_index ==10):
-    #         return [0.0,4.0]
-

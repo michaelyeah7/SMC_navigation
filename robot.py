@@ -19,6 +19,11 @@ from model.ppo import ppo_update_stage1, generate_train_data
 from model.ppo import generate_action
 from model.ppo import transform_buffer
 
+#for test 
+from indoor_gym.evaluate.load_tsv import TsvLoader
+from indoor_gym.evaluate.stage_controller import PoseController,VelController
+from indoor_gym.evaluate.indoor_gym import IndoorGym
+
 
 
 MAX_EPISODES = 5000
@@ -38,7 +43,7 @@ ACT_SIZE = 2
 LEARNING_RATE = 5e-5
 
 
-def run(env, policy, policy_path, action_bound, optimizer):
+def run(env, policy, policy_path, action_bound, optimizer, test_env):
 
     # rate = rospy.Rate(5)
     buff = []
@@ -50,8 +55,13 @@ def run(env, policy, policy_path, action_bound, optimizer):
     #     env.reset_world()
     # env.store_resetPose()
 
+    if env.mode == 'test':
+        MAX_EPISODES = 50
 
     for id in range(MAX_EPISODES):
+        if env.mode == 'test':
+            goal = test_env.step_scenarios(rank_range=range(9),scenario_id= 8,move_type="vel",test_time=20)
+
         rospy.sleep(3.0)
         env.reset_pose()
         # env.reset_world()
@@ -118,7 +128,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
             terminal_list = comm.gather(terminal, root=0)
             # terminal_list = [terminal]
 
-            if env.mpi_rank == 0:
+            if env.mpi_rank == 0 and env.mode == 'train':
                 buff.append((state_list, a, r_list, terminal_list, logprob, v))
                 if len(buff) > HORIZON - 1:
                     s_batch, goal_batch, speed_batch, a_batch, r_batch, d_batch, l_batch, v_batch = \
@@ -140,7 +150,7 @@ def run(env, policy, policy_path, action_bound, optimizer):
             state = state_next
 
 
-        if env.mpi_rank == 0:
+        if env.mpi_rank == 0 and env.mode == 'train':
             if global_update != 0 and global_update % 20 == 0:
                 torch.save(policy.state_dict(), policy_path + '/Stage1_{}'.format(global_update))
                 logger.info('########################## model saved when update {} times#########'
@@ -157,22 +167,11 @@ def run(env, policy, policy_path, action_bound, optimizer):
 
 
 if __name__ == '__main__':
-    # ROS_PORT0 = 11323 #ros port starty from 11321
-    # NUM_BOT = 1 #num of robot per stage
-    # NUM_ENV = 2 #num of total robots
-    # ID = 20 #policy saved directory
-    # ENV_INDEX =7 # supposed that we only train in the circle
-
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--humans', type=int, default=2)
-    parser.add_argument('--groups_num', type=int, default=4)
-    parser.add_argument('--column_num', type=int, default=2)
-    parser.add_argument('--row_num', type=int, default=2)
-    parser.add_argument('--x_step', type=int, default=20)
-    parser.add_argument('--y_step', type=int, default=20)
-    parser.add_argument('--robot_x_init', type=int, default=-100)
-    parser.add_argument('--robot_y_init', type=int, default=80)
+    parser.add_argument('--humans', type=int, default=4)
+    parser.add_argument('--groups_num', type=int, default=1)
+    parser.add_argument('--mode', default='test')
     args = parser.parse_args()
 
     NUM_ENV = args.groups_num
@@ -181,19 +180,16 @@ if __name__ == '__main__':
     rank = comm.Get_rank()
     size = comm.Get_size()
 
-    group_index = rank
-    column_index = group_index % args.column_num
-    row_index = group_index / args.column_num
 
-    robot_index = rank * 3
-    # init_pose_x = args.x_step * column_index + args.robot_x_init
-    # init_pose_y = args.y_step * row_index + args.robot_y_init
-    # init_pose = [init_pose_x, init_pose_y, 0.0]
-    # goal_point = [init_pose_x + 10, init_pose_y]
+    if args.mode == 'train':
+        robot_index = rank * 3
+    else:
+        robot_index = 9
+        script_dir = os.path.abspath(os.getcwd())
 
-    env = StageWorld(beam_num=360,mpi_rank = rank, robot_index=robot_index)
-    reward = None
-    action_bound = [[0, -1], [1, 1]]
+        ## launch stage and load dataset
+        test_env = IndoorGym(launch_stage=True, world_path=script_dir+"/worlds/room1.world")
+        test_env.make(dataset_dir=script_dir+"/indoor_gym/THOR_dataset/", obs_num=1, exp_id=1)
 
 
     #set policy folder and log folder
@@ -202,10 +198,10 @@ if __name__ == '__main__':
         os.makedirs(policydir)
 
     # hostname = socket.gethostname()
-    if not os.path.exists('./log_robot%dhuman/' %args.humans):
-        os.makedirs('./log_robot%dhuman/' %args.humans)
-    output_file = './log_robot%dhuman/' %args.humans + 'output.log'
-    cal_file = './log_robot%dhuman/' %args.humans + 'cal.log'
+    if not os.path.exists('./log_robot_%s_%dhuman/' %(args.mode,args.humans)):
+        os.makedirs('./log_robot_%s_%dhuman/' %(args.mode,args.humans))
+    output_file = './log_robot_%s_%dhuman/' %(args.mode,args.humans) + 'output.log'
+    cal_file = './log_robot_%s_%dhuman/' %(args.mode,args.humans) + 'cal.log'
 
     # config log
     logger = logging.getLogger('mylogger')
@@ -226,13 +222,6 @@ if __name__ == '__main__':
     logger_cal.addHandler(cal_f_handler)
 
 
-
-
-
-
-    # torch.manual_seed(1)
-    # np.random.seed(1)
-
     if rank == 0:
         policy_path = policydir
         # policy_path = 'policy/robot2human_policy'
@@ -242,10 +231,7 @@ if __name__ == '__main__':
         opt = Adam(policy.parameters(), lr=LEARNING_RATE)
         mse = nn.MSELoss()
 
-        # if not os.path.exists(policy_path):
-        #     os.makedirs(policy_path)
-
-        file = policy_path + '/Stage1_1760'
+        file = policy_path + '/Stage1_4human_policy'
         if os.path.exists(file):
             logger.info('####################################')
             logger.info('############Loading Model###########')
@@ -261,8 +247,14 @@ if __name__ == '__main__':
         policy_path = None
         opt = None
 
+    env = StageWorld(beam_num=360,mpi_rank = rank, robot_index=robot_index, mode=args.mode)
+    reward = None
+    action_bound = [[0, -1], [1, 1]]
     try:
-        print('env.mpi_rank',env.mpi_rank)
-        run(env=env, policy=policy, policy_path=policy_path, action_bound=action_bound, optimizer=opt)
+        if args.mode == 'train':
+            print('env.mpi_rank',env.mpi_rank)
+            run(env=env, policy=policy, policy_path=policy_path, action_bound=action_bound, optimizer=opt, test_env=None)
+        else:
+            run(env=env, policy=policy, policy_path=policy_path, action_bound=action_bound, optimizer=opt, test_env=test_env)
     except KeyboardInterrupt:
         pass
