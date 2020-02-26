@@ -31,9 +31,10 @@ open third tab
 ```
 python robot.py --human 2
 ```
-opent fourth tab 
+open fourth tab 
 ```
 roslaunch SMC_navigation smc_meta.launch
+```
 
 ## Testing
 open a new terminal
@@ -44,3 +45,4 @@ open second tab
 ```
 cd src/SMC_navigation
 mpiexec --allow-run-as-root -np 1 python robot.py --humans 2 --mode test
+```
