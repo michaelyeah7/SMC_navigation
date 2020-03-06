@@ -47,7 +47,7 @@ def run(env, policy, policy_path, action_bound, optimizer, test_env):
 
     # rate = rospy.Rate(5)
     buff = []
-    global_update = 1760
+    global_update = 3180
     global_step = 0
 
 
@@ -57,6 +57,8 @@ def run(env, policy, policy_path, action_bound, optimizer, test_env):
 
     if env.mode == 'test':
         MAX_EPISODES = 50
+    else:
+        MAX_EPISODES = 5000
 
     for id in range(MAX_EPISODES):
         if env.mode == 'test':
@@ -169,7 +171,7 @@ def run(env, policy, policy_path, action_bound, optimizer, test_env):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--humans', type=int, default=4)
+    parser.add_argument('--humans', type=int, default=8)
     parser.add_argument('--groups_num', type=int, default=1)
     parser.add_argument('--mode', default='test')
     args = parser.parse_args()
@@ -182,7 +184,7 @@ if __name__ == '__main__':
 
 
     if args.mode == 'train':
-        robot_index = rank * 3
+        robot_index = rank * 9
     else:
         robot_index = 9
         script_dir = os.path.abspath(os.getcwd())
@@ -201,7 +203,7 @@ if __name__ == '__main__':
     if not os.path.exists('./log_robot_%s_%dhuman/' %(args.mode,args.humans)):
         os.makedirs('./log_robot_%s_%dhuman/' %(args.mode,args.humans))
     output_file = './log_robot_%s_%dhuman/' %(args.mode,args.humans) + 'output.log'
-    cal_file = './log_robot_%s_%dhuman/' %(args.mode,args.humans) + 'cal.log'
+    cal_file = './log_robot_%s_%dhuman/' %(args.mode,args.humans) + 'cal_on2human.log'
 
     # config log
     logger = logging.getLogger('mylogger')
@@ -231,7 +233,7 @@ if __name__ == '__main__':
         opt = Adam(policy.parameters(), lr=LEARNING_RATE)
         mse = nn.MSELoss()
 
-        file = policy_path + '/Stage1_4human_policy'
+        file = policy_path + '/Stage1_8320'
         if os.path.exists(file):
             logger.info('####################################')
             logger.info('############Loading Model###########')
